@@ -1,0 +1,794 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Throwing Darts at Pi</title>
+<style>
+:root{
+  --bg:#f6f4ee; --panel:#ffffff; --ink:#1c1a17; --muted:#5d5950; --faint:#9a958a; --line:#e3ded3; --grid:#ece8de;
+  --inside:#0f7b6c; --outside:#d0542a; --accent:#4f46b8; --on-accent:#ffffff; --target:#c08a10;
+  --band:rgba(79,70,184,0.16); --band2:rgba(79,70,184,0.07); --code:#efebe1;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#15140f; --panel:#1e1d18; --ink:#efece4; --muted:#b7b2a6; --faint:#7f7a70; --line:#34322b; --grid:#2a2923;
+    --inside:#3cc7a8; --outside:#f08a5d; --accent:#a39bf3; --on-accent:#17142e; --target:#e2b54a;
+    --band:rgba(163,155,243,0.22); --band2:rgba(163,155,243,0.09); --code:#2a2923;
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.65 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+h1,h2,h3{font-family:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;font-weight:600;line-height:1.2;letter-spacing:-0.01em}
+h1{font-size:clamp(2.3rem,6vw,3.6rem);margin:.15em 0 .3em}
+h2{font-size:clamp(1.6rem,4vw,2.1rem);margin:0 0 .5em}
+h3{font-size:1.25rem;margin:1.8em 0 .4em}
+p,li{max-width:46em}
+a{color:var(--accent)}
+.wrap{max-width:1060px;margin:0 auto;padding:0 20px}
+header.hero{padding:60px 0 28px;border-bottom:1px solid var(--line)}
+.kicker{text-transform:uppercase;letter-spacing:.14em;font-size:.76rem;color:var(--accent);font-weight:700;margin:0}
+.lede{font-size:1.2rem;color:var(--muted)}
+.toc{display:flex;flex-wrap:wrap;gap:6px 20px;margin-top:20px;font-size:.92rem}
+.toc a{color:var(--muted);text-decoration:none;border-bottom:1px solid var(--line)}
+.toc a:hover{color:var(--ink)}
+section{padding:52px 0;border-bottom:1px solid var(--line)}
+.secnum{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--accent);font-size:.85rem;display:block;margin-bottom:4px}
+.two{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:30px;align-items:start}
+.two.even{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+@media (max-width:840px){.two,.two.even{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}
+canvas{display:block;width:100%;height:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.fig{width:100%;max-width:380px;height:auto;display:block;margin:0 auto}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.formula{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--code);padding:12px 16px;border-radius:10px;font-size:.95rem;line-height:1.8;overflow-x:auto}
+.callout{border-left:3px solid var(--accent);padding:2px 0 2px 16px;margin:20px 0}
+button{font:inherit;font-size:.93rem;padding:8px 14px;border-radius:9px;border:1px solid var(--line);background:var(--panel);color:var(--ink);cursor:pointer;transition:border-color .15s,transform .05s}
+button:hover{border-color:var(--faint)}
+button:active{transform:translateY(1px)}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:600}
+button.primary.on{background:transparent;color:var(--accent)}
+select{font:inherit;font-size:.93rem;padding:7px 10px;border-radius:9px;border:1px solid var(--line);background:var(--panel);color:var(--ink)}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0}
+label.slider{display:flex;align-items:center;gap:12px;font-size:.9rem;color:var(--muted);margin:12px 0}
+label.slider input{flex:1;min-width:80px;accent-color:var(--accent)}
+label.check{display:flex;align-items:center;gap:8px;font-size:.92rem;color:var(--ink);margin:10px 0;cursor:pointer}
+label.check input{accent-color:var(--accent);width:17px;height:17px}
+output{min-width:6.5em;font-variant-numeric:tabular-nums;color:var(--ink);text-align:right;font-size:.9rem}
+.bigwrap{display:flex;flex-direction:column}
+.biglabel{font-size:.8rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.bignum{font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;font-size:3rem;line-height:1.1;font-variant-numeric:tabular-nums lining-nums}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0}
+.stats>div{background:var(--code);border-radius:10px;padding:10px 12px}
+dt{font-size:.76rem;color:var(--muted)}
+dd{margin:0;font-size:1.08rem;font-weight:600;font-variant-numeric:tabular-nums}
+.legend{display:flex;gap:6px 18px;flex-wrap:wrap;font-size:.85rem;color:var(--muted);margin:10px 2px 0}
+.sw{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+.sw.sq{border-radius:3px}
+.tablewrap{overflow-x:auto;margin-top:16px}
+table{border-collapse:collapse;width:100%;font-size:.92rem;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+th{font-weight:600;color:var(--muted);font-size:.8rem}
+.flow{display:flex;flex-direction:column;gap:14px;margin:22px 0}
+.flowrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.flowtag{width:10.5em;font-weight:700;font-size:.9rem}
+.fbox{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 14px;font-weight:600;font-size:.95rem;line-height:1.3}
+.fbox small{display:block;font-weight:400;color:var(--muted);font-size:.8rem}
+.fbox.out{border-color:var(--accent)}
+.farrow{color:var(--faint);font-size:1.2rem}
+.hdread{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
+.hdread>div{background:var(--code);border-radius:10px;padding:10px 12px}
+.status{font-size:.9rem;color:var(--muted);min-height:1.5em;margin:6px 0 0}
+.status.good{color:var(--inside);font-weight:600}
+.stack{display:flex;flex-direction:column;gap:14px}
+.chartlabel{font-size:.82rem;color:var(--muted);margin:0 0 6px 2px}
+ol.steps li{margin-bottom:6px}
+.compare th{width:22%}
+footer{padding:36px 0 60px;color:var(--muted);font-size:.88rem}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="kicker">An interactive explainer</p>
+    <h1>Throwing darts at π</h1>
+    <p class="lede">How random numbers can calculate π, why that works more slowly than you'd hope, and how the same trick runs in reverse to turn measurements into models.</p>
+    <nav class="toc">
+      <a href="#idea">1 · The idea</a>
+      <a href="#throw">2 · Throw some darts</a>
+      <a href="#slow">3 · Why it's slow</a>
+      <a href="#mc">4 · What makes it Monte Carlo</a>
+      <a href="#dims">5 · Darts in higher dimensions</a>
+      <a href="#rmc">6 · Reverse Monte Carlo</a>
+      <a href="#compare">7 · Side by side</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<section id="idea">
+  <div class="wrap two">
+    <div>
+      <span class="secnum">01</span>
+      <h2>The idea</h2>
+      <p>Draw a square that is 1 unit on each side. Put the centre of a circle of radius 1 at the square's bottom-left corner. Exactly one quarter of that circle fits inside the square.</p>
+      <p>The square has area 1 × 1 = 1. A full circle of radius 1 has area π × 1² = π, so the quarter circle has area <strong>π/4 ≈ 0.785</strong>.</p>
+      <p>Now throw darts so that each one lands at a completely random spot in the square, with every spot equally likely. The chance that a dart lands inside the quarter circle is just the share of the square's area the quarter circle covers: π/4. So after lots of throws,</p>
+      <div class="formula">darts inside ÷ darts thrown ≈ π/4<br>⇒ π ≈ 4 × (darts inside ÷ darts thrown)</div>
+      <p>Checking whether a dart at position (x, y) is inside is easy with Pythagoras: its distance from the corner is √(x² + y²), so it's inside when <span class="mono">x² + y² ≤ 1</span>. Notice that nowhere in this recipe do you need to already know π.</p>
+    </div>
+    <div class="panel">
+      <svg class="fig" viewBox="0 0 370 350" role="img" aria-label="A unit square with a quarter circle of radius 1 drawn from its bottom-left corner. The quarter circle has area pi over 4; a few darts are scattered, some inside and some outside.">
+        <rect x="50" y="20" width="290" height="290" fill="var(--outside)" fill-opacity="0.09"/>
+        <path d="M50 310 L50 20 A290 290 0 0 1 340 310 Z" fill="var(--inside)" fill-opacity="0.17"/>
+        <rect x="50" y="20" width="290" height="290" fill="none" stroke="var(--ink)" stroke-width="2"/>
+        <path d="M50 20 A290 290 0 0 1 340 310" fill="none" stroke="var(--ink)" stroke-width="2"/>
+        <line x1="50" y1="310" x2="272" y2="124" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="5 5"/>
+        <text x="146" y="182" font-size="15" fill="var(--muted)">r = 1</text>
+        <text x="132" y="294" font-size="17" font-weight="600" fill="var(--inside)">area = π/4</text>
+        <text x="332" y="44" font-size="14" text-anchor="end" fill="var(--outside)">area = 1 − π/4</text>
+        <g fill="var(--inside)">
+          <circle cx="108" cy="223" r="4.5"/><circle cx="195" cy="136" r="4.5"/><circle cx="253" cy="252" r="4.5"/>
+          <circle cx="151" cy="92" r="4.5"/><circle cx="209" cy="223" r="4.5"/><circle cx="93" cy="63" r="4.5"/><circle cx="282" cy="165" r="4.5"/>
+        </g>
+        <g fill="var(--outside)">
+          <circle cx="311" cy="78" r="4.5"/><circle cx="262" cy="56" r="4.5"/><circle cx="325" cy="150" r="4.5"/>
+        </g>
+        <text x="50" y="332" font-size="15" text-anchor="middle" fill="var(--muted)">0</text>
+        <text x="340" y="332" font-size="15" text-anchor="middle" fill="var(--muted)">1</text>
+        <text x="38" y="25" font-size="15" text-anchor="end" fill="var(--muted)">1</text>
+        <text x="195" y="332" font-size="13" text-anchor="middle" fill="var(--faint)">x</text>
+        <text x="30" y="168" font-size="13" text-anchor="middle" fill="var(--faint)">y</text>
+      </svg>
+      <p class="legend" style="justify-content:center"><span><i class="sw" style="background:var(--inside)"></i>inside: x² + y² ≤ 1</span><span><i class="sw" style="background:var(--outside)"></i>outside</span></p>
+    </div>
+  </div>
+</section>
+
+<section id="throw">
+  <div class="wrap">
+    <span class="secnum">02</span>
+    <h2>Throw some darts</h2>
+    <p>Throw one dart at a time to see the randomness, or let it run and watch the estimate settle. The chart underneath tracks your estimate as the number of darts grows.</p>
+    <div class="two">
+      <div>
+        <canvas id="dartCanvas" width="800" height="800" aria-label="Dart board: unit square with quarter circle and thrown darts"></canvas>
+        <div class="legend"><span><i class="sw" style="background:var(--inside)"></i>landed inside</span><span><i class="sw" style="background:var(--outside)"></i>landed outside</span></div>
+      </div>
+      <div class="panel">
+        <div class="bigwrap"><span class="biglabel">Current estimate of π</span><span id="sEst" class="bignum">—</span></div>
+        <div id="sFormula" class="formula" style="margin-top:10px">π ≈ 4 × inside ÷ thrown</div>
+        <dl class="stats">
+          <div><dt>Darts thrown</dt><dd id="sTotal">0</dd></div>
+          <div><dt>Landed inside</dt><dd id="sInside">0</dd></div>
+          <div><dt>Off from true π by</dt><dd id="sErr">—</dd></div>
+          <div><dt>Typical error at this many darts</dt><dd id="sTyp">—</dd></div>
+        </dl>
+        <div class="controls">
+          <button data-n="1">+1 dart</button>
+          <button data-n="100">+100</button>
+          <button data-n="10000">+10,000</button>
+        </div>
+        <div class="controls">
+          <button id="autoBtn" class="primary">Auto-throw</button>
+          <button id="dartReset">Reset</button>
+        </div>
+        <label class="slider">Speed <input type="range" id="speed" min="0" max="100" value="40"><output id="speedOut"></output></label>
+        <p class="status">True value: π = 3.14159265…</p>
+      </div>
+    </div>
+    <h3>How the estimate settles down</h3>
+    <canvas id="convCanvas" width="1000" height="380" aria-label="Running estimate of pi versus number of darts thrown, on a log scale"></canvas>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--accent)"></i>your running estimate</span>
+      <span><i class="sw sq" style="background:var(--band);border:1px solid var(--accent)"></i>where about 68% of runs would be</span>
+      <span><i class="sw sq" style="background:var(--band2);border:1px solid var(--accent)"></i>where about 95% of runs would be</span>
+    </div>
+    <p>The x-axis is logarithmic: each gridline is ten times more darts than the last. The shaded funnel shows how much a typical estimate wobbles at each stage. Early on it swings wildly; by a hundred thousand darts it is usually within about 0.005 of π.</p>
+  </div>
+</section>
+
+<section id="slow">
+  <div class="wrap">
+    <span class="secnum">03</span>
+    <h2>Why it's slow: the 1/√N rule</h2>
+    <p>Each dart is basically a coin flip that comes up "inside" with probability π/4. Statistics tells us how much the average of N such flips wobbles: the typical error in the π estimate is about</p>
+    <div class="formula">typical error ≈ 4 × √( (π/4)(1 − π/4) / N ) ≈ 1.64 ÷ √N</div>
+    <p>The important part is the <strong>√N</strong>. To make the error 10 times smaller you need 100 times more darts. A million darts gets you roughly three correct decimal places; each extra digit costs another factor of 100.</p>
+    <p>You can see this directly by repeating the whole experiment many times. Pick how many darts each experiment uses, run 1,000 experiments, and look at how spread out the 1,000 answers are. Try a few different sizes and compare the table.</p>
+    <div class="controls">
+      <label class="slider" style="flex:1;min-width:260px;margin:0">Darts per experiment, N <input type="range" id="expN" min="0" max="6" step="1" value="2"><output id="expNOut">100</output></label>
+      <button id="expBtn" class="primary">Run 1,000 experiments</button>
+    </div>
+    <canvas id="expCanvas" width="1000" height="380" aria-label="Histogram of pi estimates from 1000 repeated experiments"></canvas>
+    <div class="legend">
+      <span><i class="sw sq" style="background:var(--accent)"></i>share of the 1,000 experiments giving each estimate</span>
+      <span><i class="sw" style="background:var(--target)"></i>bell curve predicted by the 1.64/√N rule (N ≥ 100)</span>
+    </div>
+    <div class="tablewrap">
+      <table id="expTable">
+        <thead><tr><th>Darts per experiment (N)</th><th>Average of the 1,000 estimates</th><th>Measured spread (std. dev.)</th><th>Predicted spread, 1.64 ÷ √N</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="callout">Two things to notice. The average lands on π no matter how small N is (the method is <em>unbiased</em>). Only the spread changes, and it shrinks like 1/√N. With only 10 darts the answers can only be 0, 0.4, 0.8 … 4.0, which is why that histogram looks like a comb.</p>
+  </div>
+</section>
+
+<section id="mc">
+  <div class="wrap two even">
+    <div>
+      <span class="secnum">04</span>
+      <h2>What makes it "Monte Carlo"</h2>
+      <p>The name comes from the casino in Monaco. It was coined by scientists at Los Alamos in the 1940s (Stanislaw Ulam, John von Neumann and Nicholas Metropolis) who used random sampling to study neutrons in nuclear reactions. Every Monte Carlo method follows the same recipe:</p>
+      <ol class="steps">
+        <li><strong>Define the space of possibilities</strong> (every point in the square).</li>
+        <li><strong>Sample it at random</strong> (throw darts).</li>
+        <li><strong>Do a simple, deterministic check on each sample</strong> (is x² + y² ≤ 1?).</li>
+        <li><strong>Average the results</strong> to estimate the answer (the fraction inside, times 4).</li>
+      </ol>
+      <p>The trick is turning a question with an exact answer (what is this area?) into an average over random samples, which is often far easier to compute.</p>
+    </div>
+    <div>
+      <h3 style="margin-top:2.6em">Why bother, if it's so slow?</h3>
+      <p>For π alone, there are vastly faster formulas. Monte Carlo earns its keep in problems with many dimensions. If you estimate an area with a grid of 10 points per side, two dimensions need 100 points, but 20 dimensions need 10²⁰. The Monte Carlo error rule, 1.64/√N, has no dimension in it at all: the cost of a given accuracy doesn't explode as you add dimensions.</p>
+      <p>That is why it's used for pricing financial risk, simulating particles and materials, rendering realistic light in films (path tracing), and drawing samples from probability distributions in machine learning.</p>
+    </div>
+  </div>
+</section>
+
+<section id="dims">
+  <div class="wrap">
+    <span class="secnum">05</span>
+    <h2>Bonus: darts in higher dimensions</h2>
+    <p>The same game works in any number of dimensions. In d dimensions the square becomes a hypercube with sides of length 1, and the quarter circle becomes the corner piece of a d-dimensional ball of radius 1. A dart is inside if x₁² + x₂² + … + x_d² ≤ 1. Drag the slider to see what share of darts land inside.</p>
+    <div class="two even">
+      <div>
+        <label class="slider">Dimensions, d <input type="range" id="dimS" min="1" max="20" step="1" value="2"><output id="dimOut">2</output></label>
+        <div class="hdread">
+          <div><dt>Exact share of the cube inside the ball</dt><dd id="hdExact">—</dd></div>
+          <div><dt>Your 100,000 random darts</dt><dd id="hdMeas">—</dd></div>
+        </div>
+        <button id="hdBtn">Throw 100,000 darts again</button>
+        <p>In 2 dimensions about 79% of darts hit. In 10 dimensions it's about 1 in 400, and in 20 dimensions about 1 in 40 million. Almost all of a high-dimensional cube lies outside the ball, out toward its corners.</p>
+      </div>
+      <div>
+        <canvas id="hdCanvas" width="800" height="380" aria-label="Share of darts landing inside the ball for dimensions 1 to 20, on a log scale"></canvas>
+      </div>
+    </div>
+    <p class="callout">This is the same high-dimensional strangeness that machine-learning books like Bishop's warn about. The 1/√N rule still holds, but if your target is a tiny sliver of the space, random darts almost never hit it. That's why serious sampling methods, such as Markov chain Monte Carlo, take guided random walks toward the regions that matter instead of throwing darts blindly.</p>
+  </div>
+</section>
+
+<section id="rmc">
+  <div class="wrap">
+    <span class="secnum">06</span>
+    <h2>Reverse Monte Carlo: running the question backwards</h2>
+    <p>Ordinary ("forward") Monte Carlo starts from a model you already know, like the quarter circle, and uses randomness to compute a number from it, like π.</p>
+    <p><strong>Reverse Monte Carlo (RMC)</strong> flips the direction. You start with <em>measurements</em> and use randomness to find a <em>model</em> that could have produced them. It was introduced by Robert McGreevy and László Pusztai in 1988 to work out the atomic structure of liquids and glasses. Diffraction experiments on those materials don't tell you where each atom is. They record something like a histogram of the distances between atoms. RMC builds a 3D arrangement of atoms whose distance histogram matches the experiment.</p>
+    <div class="flow">
+      <div class="flowrow"><span class="flowtag">Monte Carlo</span><div class="fbox">Known model<small>the quarter circle</small></div><span class="farrow">→</span><div class="fbox">Random samples<small>throw darts</small></div><span class="farrow">→</span><div class="fbox out">A number<small>π ≈ 3.14</small></div></div>
+      <div class="flowrow"><span class="flowtag">Reverse Monte Carlo</span><div class="fbox">Measured data<small>a histogram</small></div><span class="farrow">→</span><div class="fbox">Random tweaks<small>keep the ones that fit better</small></div><span class="farrow">→</span><div class="fbox out">A model<small>positions that explain the data</small></div></div>
+    </div>
+    <h3>The algorithm</h3>
+    <ol class="steps">
+      <li>Start with a random guess: points scattered anywhere.</li>
+      <li>Work out what the measurement <em>would</em> look like for this guess, and score the mismatch with the real measurement. The usual score is <span class="mono">χ² = Σ (simulated − measured)² ÷ σ²</span>, summed over every histogram bin, where σ is how much error the measurement is allowed to have.</li>
+      <li>Pick one point at random and nudge it a little.</li>
+      <li>If χ² went down, keep the move. If it went up, usually undo it, but keep it anyway with probability <span class="mono">e^(−Δχ²/2)</span> so the search can climb out of dead ends. (This acceptance rule is borrowed from the Metropolis algorithm, with misfit playing the role of energy.)</li>
+      <li>Repeat many thousands of times, until χ² stops falling and the remaining mismatch is comparable to the measurement's error σ.</li>
+    </ol>
+
+    <h3>Try it: recover a hidden shape from a histogram</h3>
+    <p>A hidden shape inside the square has been "measured". The measurement (gold bars) only records how many points sit at each distance r from the bottom-left corner, much like a diffraction pattern only records distances. The algorithm never sees the shape itself. It starts with 600 randomly scattered points and has to find an arrangement that reproduces the histogram.</p>
+
+    <div class="two">
+      <div>
+        <canvas id="rmcCanvas" width="800" height="800" aria-label="Reverse Monte Carlo configuration of points in the unit square"></canvas>
+        <div class="legend"><span><i class="sw" style="background:var(--accent)"></i>the algorithm's current points</span><span><i class="sw sq" style="background:var(--target)"></i>hidden shape (when revealed)</span><span>dashed arc: r = 1</span></div>
+      </div>
+      <div class="stack">
+        <div class="panel">
+          <div class="controls" style="margin-top:0">
+            <label style="font-size:.9rem;color:var(--muted)">Hidden shape&nbsp;
+              <select id="shapeSel">
+                <option value="disk">Quarter disk</option>
+                <option value="ring">Ring</option>
+                <option value="outside">Outside the circle</option>
+                <option value="wedge">Thin wedge (tricky)</option>
+              </select>
+            </label>
+          </div>
+          <label class="check"><input type="checkbox" id="showShape"> Reveal the hidden shape</label>
+          <div class="controls">
+            <button id="rmcRun" class="primary">Run</button>
+            <button id="rmcStep">+1,000 moves</button>
+            <button id="rmcReset">Scramble</button>
+          </div>
+          <label class="slider">Tolerance σ <input type="range" id="sigS" min="0.25" max="6" step="0.25" value="1"><output id="sigOut">1.00</output></label>
+          <label class="slider">Speed <input type="range" id="rmcSpeed" min="0" max="100" value="65"><output id="rmcSpeedOut"></output></label>
+          <dl class="stats">
+            <div><dt>Moves tried</dt><dd id="rTried">0</dd></div>
+            <div><dt>Moves accepted</dt><dd id="rAcc">—</dd></div>
+            <div><dt>Misfit χ²</dt><dd id="rChi">—</dd></div>
+            <div><dt>Points within r ≤ 1</dt><dd id="rIn">—</dd></div>
+          </dl>
+          <p id="rStatus" class="status"></p>
+        </div>
+      </div>
+    </div>
+    <div class="two even" style="margin-top:20px">
+      <div>
+        <p class="chartlabel">Histogram of distances from the corner: measured (gold bars) vs the current guess (purple)</p>
+        <canvas id="rmcHist" width="800" height="380" aria-label="Measured versus simulated histogram of distances from the corner"></canvas>
+      </div>
+      <div>
+        <p class="chartlabel">Misfit χ² as the moves pile up (log scale)</p>
+        <canvas id="rmcChi" width="800" height="380" aria-label="Chi squared misfit versus number of moves"></canvas>
+      </div>
+    </div>
+
+    <h3>Things to try</h3>
+    <ul>
+      <li><strong>Quarter disk:</strong> press Run, then tick "Reveal". The points drain out of the corner and fill the quarter disk, even though the algorithm was only ever shown a histogram of distances.</li>
+      <li><strong>Ring:</strong> a harder target. Points have to leave both the middle and the corner.</li>
+      <li><strong>Tolerance σ:</strong> a large σ means "the data is noisy, a rough match is fine", so stray points are tolerated. A small σ forces a much tighter fit.</li>
+      <li><strong>Thin wedge:</strong> run it, then reveal the shape. The algorithm fills the <em>whole</em> quarter disk, not the wedge. That's not a bug: a thin wedge and a full quarter disk produce exactly the same distance histogram, so the data simply can't tell them apart.</li>
+    </ul>
+    <p class="callout">That last experiment is the central caveat of Reverse Monte Carlo. It finds <em>a</em> model consistent with the data, not necessarily <em>the</em> true one. Whatever the measurement doesn't record (here, the angle), RMC fills in as randomly as it can. Real studies guard against this by combining several kinds of measurement and adding physical constraints, such as atoms not being allowed to overlap.</p>
+  </div>
+</section>
+
+<section id="compare">
+  <div class="wrap">
+    <span class="secnum">07</span>
+    <h2>Side by side</h2>
+    <div class="tablewrap">
+      <table class="compare">
+        <thead><tr><th></th><th>Monte Carlo (forward)</th><th>Reverse Monte Carlo</th></tr></thead>
+        <tbody>
+          <tr><th>You start with</th><td>A known model (the quarter circle)</td><td>Measured data (a histogram)</td></tr>
+          <tr><th>What's random</th><td>Where each sample lands</td><td>Which point moves, and where to</td></tr>
+          <tr><th>Each step</th><td>Independent; every dart ignores the others</td><td>Builds on the last; a chain of accepted and rejected moves</td></tr>
+          <tr><th>You end with</th><td>A number (π ≈ 3.14)</td><td>A model (positions consistent with the data)</td></tr>
+          <tr><th>Question answered</th><td>"What does this model imply?"</td><td>"What model could explain this data?"</td></tr>
+          <tr><th>Main caveat</th><td>Accuracy improves only like 1/√N</td><td>The answer isn't unique; it's one of many models that fit</td></tr>
+          <tr><th>Typical uses</th><td>Integrals, risk, particle physics, film rendering</td><td>Structure of liquids, glasses and disordered materials</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:18px">You'll sometimes hear "reverse" or "inverse" Monte Carlo used loosely for other things. This page uses the established meaning from materials science described above.</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">Everything on this page runs in your browser with no internet connection needed. Random numbers come from your browser's built-in generator, so every run is different.</div>
+</footer>
+
+<script>
+(() => {
+'use strict';
+const root = document.documentElement;
+const C = n => getComputedStyle(root).getPropertyValue(n).trim();
+const $ = id => document.getElementById(id);
+const fmt = n => Math.round(n).toLocaleString('en-US');
+const short = n => { const f = (v, s) => (+v.toFixed(1)).toString() + s; return n >= 1e6 ? f(n / 1e6, 'M') : n >= 1e3 ? f(n / 1e3, 'k') : String(Math.round(n)); };
+const PI = Math.PI;
+const SIG1 = 4 * Math.sqrt((PI / 4) * (1 - PI / 4));
+const FONT = '19px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+
+/* geometry shared by the two square canvases (800 x 800) */
+const PL = 56, PT = 20, SZ = 724;
+const px = x => PL + x * SZ, py = y => PT + (1 - y) * SZ;
+
+function squareFrame(ctx, clearMargins) {
+  ctx.save();
+  if (clearMargins) { ctx.clearRect(0, py(0) + 5, 800, 60); ctx.clearRect(0, 0, PL - 5, 800); }
+  ctx.strokeStyle = C('--ink'); ctx.lineWidth = 2.5;
+  ctx.strokeRect(px(0), py(1), SZ, SZ);
+  ctx.fillStyle = C('--muted'); ctx.font = '22px system-ui, sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  ctx.fillText('0', px(0), py(0) + 12); ctx.fillText('1', px(1) - 4, py(0) + 12);
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  ctx.fillText('1', PL - 14, py(1) + 4);
+  ctx.restore();
+}
+
+/* ============ 2. Dart board ============ */
+const dc = $('dartCanvas'), dctx = dc.getContext('2d');
+let total = 0, inside = 0, rec = [], nextRec = 1, autoOn = false;
+
+function dartFrame() {
+  squareFrame(dctx, true);
+  dctx.save();
+  dctx.strokeStyle = C('--ink'); dctx.lineWidth = 2.5;
+  dctx.beginPath(); dctx.arc(px(0), py(0), SZ, -PI / 2, 0); dctx.stroke();
+  dctx.restore();
+}
+
+function throwDarts(k) {
+  const after = total + k;
+  const r = after <= 2000 ? 4.5 : after <= 30000 ? 2.4 : 1.3;
+  const useRect = r < 2;
+  const pin = new Path2D(), pout = new Path2D();
+  for (let i = 0; i < k; i++) {
+    const x = Math.random(), y = Math.random(), hit = x * x + y * y <= 1;
+    total++; if (hit) inside++;
+    const p = hit ? pin : pout, X = px(x), Y = py(y);
+    if (useRect) p.rect(X - r, Y - r, 2 * r, 2 * r);
+    else { p.moveTo(X + r, Y); p.arc(X, Y, r, 0, 2 * PI); }
+    if (total >= nextRec) { rec.push(total, 4 * inside / total); nextRec = total < 300 ? total + 1 : Math.ceil(total * 1.015); }
+  }
+  dctx.fillStyle = C('--inside'); dctx.fill(pin);
+  dctx.fillStyle = C('--outside'); dctx.fill(pout);
+  dartFrame(); dartStats(); drawConv();
+}
+
+function dartStats() {
+  if (!total) {
+    $('sEst').textContent = '—'; $('sTotal').textContent = '0'; $('sInside').textContent = '0';
+    $('sErr').textContent = '—'; $('sTyp').textContent = '—';
+    $('sFormula').textContent = 'π ≈ 4 × inside ÷ thrown';
+    return;
+  }
+  const est = 4 * inside / total, err = est - PI;
+  $('sEst').textContent = est.toFixed(5);
+  $('sFormula').textContent = `4 × ${fmt(inside)} ÷ ${fmt(total)} = ${est.toFixed(5)}`;
+  $('sTotal').textContent = fmt(total);
+  $('sInside').textContent = `${fmt(inside)} (${(100 * inside / total).toFixed(1)}%)`;
+  $('sErr').textContent = (err >= 0 ? '+' : '−') + Math.abs(err).toFixed(5);
+  $('sTyp').textContent = '± ' + (SIG1 / Math.sqrt(total)).toPrecision(2);
+}
+
+const cc = $('convCanvas'), cctx = cc.getContext('2d');
+function drawConv() {
+  const W = cc.width, H = cc.height, L = 70, R = 50, T = 18, B = 66, w = W - L - R, h = H - T - B;
+  cctx.clearRect(0, 0, W, H);
+  const E = Math.max(2, Math.ceil(Math.log10(Math.max(total, 1)) - 1e-9));
+  const lx = n => L + Math.log10(n) / E * w;
+  const y0 = PI - 1, y1 = PI + 1, ly = v => T + (y1 - v) / (y1 - y0) * h;
+  cctx.font = FONT; cctx.lineWidth = 1;
+  cctx.strokeStyle = C('--grid'); cctx.fillStyle = C('--muted');
+  cctx.textAlign = 'right'; cctx.textBaseline = 'middle';
+  for (const v of [2.5, 3, 3.5, 4]) {
+    const Y = ly(v); cctx.beginPath(); cctx.moveTo(L, Y); cctx.lineTo(L + w, Y); cctx.stroke();
+    cctx.fillText(v.toFixed(1), L - 10, Y);
+  }
+  cctx.textAlign = 'center'; cctx.textBaseline = 'top';
+  for (let e = 0; e <= E; e++) {
+    const X = L + e / E * w; cctx.beginPath(); cctx.moveTo(X, T); cctx.lineTo(X, T + h); cctx.stroke();
+    cctx.fillText(short(10 ** e), X, T + h + 10);
+  }
+  cctx.fillText('darts thrown (log scale)', L + w / 2, T + h + 36);
+  cctx.save(); cctx.beginPath(); cctx.rect(L, T, w, h); cctx.clip();
+  const band = (k, col) => {
+    const S = 200; cctx.beginPath();
+    for (let i = 0; i <= S; i++) { const e = i / S * E, s = k * SIG1 / Math.sqrt(10 ** e), X = L + e / E * w; i ? cctx.lineTo(X, ly(PI + s)) : cctx.moveTo(X, ly(PI + s)); }
+    for (let i = S; i >= 0; i--) { const e = i / S * E, s = k * SIG1 / Math.sqrt(10 ** e), X = L + e / E * w; cctx.lineTo(X, ly(PI - s)); }
+    cctx.closePath(); cctx.fillStyle = col; cctx.fill();
+  };
+  band(2, C('--band2')); band(1, C('--band'));
+  cctx.setLineDash([8, 6]); cctx.strokeStyle = C('--ink'); cctx.lineWidth = 1.5;
+  cctx.beginPath(); cctx.moveTo(L, ly(PI)); cctx.lineTo(L + w, ly(PI)); cctx.stroke(); cctx.setLineDash([]);
+  if (rec.length) {
+    cctx.beginPath();
+    for (let i = 0; i < rec.length; i += 2) { const X = lx(rec[i]), Y = ly(rec[i + 1]); i ? cctx.lineTo(X, Y) : cctx.moveTo(X, Y); }
+    const Xe = lx(total), Ye = ly(4 * inside / total);
+    cctx.lineTo(Xe, Ye);
+    cctx.strokeStyle = C('--accent'); cctx.lineWidth = 2.5; cctx.lineJoin = 'round'; cctx.stroke();
+    cctx.beginPath(); cctx.arc(Xe, Ye, 6, 0, 2 * PI); cctx.fillStyle = C('--accent'); cctx.fill();
+  }
+  cctx.restore();
+  cctx.fillStyle = C('--ink'); cctx.textAlign = 'left'; cctx.textBaseline = 'middle';
+  cctx.font = 'bold 22px Georgia, serif'; cctx.fillText('π', L + w + 12, ly(PI));
+  if (!total) {
+    cctx.font = FONT; cctx.fillStyle = C('--muted'); cctx.textAlign = 'center';
+    cctx.fillText('Throw some darts to start the line', L + w / 2, T + h / 2 - 60);
+  }
+}
+
+const speedPer = () => Math.max(1, Math.round(10 ** (+$('speed').value / 100 * 4)));
+function updSpeed() { $('speedOut').textContent = fmt(speedPer()) + ' / frame'; }
+function autoLoop() { if (!autoOn) return; throwDarts(speedPer()); requestAnimationFrame(autoLoop); }
+function setAuto(on) { autoOn = on; const b = $('autoBtn'); b.textContent = on ? 'Pause' : 'Auto-throw'; b.classList.toggle('on', on); if (on) requestAnimationFrame(autoLoop); }
+
+document.querySelectorAll('[data-n]').forEach(b => b.addEventListener('click', () => throwDarts(+b.dataset.n)));
+$('autoBtn').addEventListener('click', () => setAuto(!autoOn));
+$('dartReset').addEventListener('click', () => {
+  setAuto(false); total = 0; inside = 0; rec = []; nextRec = 1;
+  dctx.clearRect(0, 0, dc.width, dc.height); dartFrame(); dartStats(); drawConv();
+});
+$('speed').addEventListener('input', updSpeed);
+
+/* ============ 3. Repeated experiments ============ */
+const NS = [10, 30, 100, 300, 1000, 3000, 10000];
+const expRows = new Map();
+const ec = $('expCanvas'), ectx = ec.getContext('2d');
+let lastExp = null;
+
+function runExp() {
+  const N = NS[+$('expN').value], M = 1000, est = new Float64Array(M);
+  let s = 0, s2 = 0;
+  for (let m = 0; m < M; m++) {
+    let c = 0;
+    for (let i = 0; i < N; i++) { const x = Math.random(), y = Math.random(); if (x * x + y * y <= 1) c++; }
+    const e = 4 * c / N; est[m] = e; s += e; s2 += e * e;
+  }
+  const mean = s / M, sd = Math.sqrt(Math.max(0, s2 / M - mean * mean));
+  lastExp = { N, est, mean, sd };
+  expRows.set(N, { mean, sd });
+  drawExp(); renderTable();
+}
+
+function renderTable() {
+  const tb = $('expTable').querySelector('tbody'); tb.innerHTML = '';
+  [...expRows.keys()].sort((a, b) => a - b).forEach(N => {
+    const r = expRows.get(N), tr = document.createElement('tr');
+    tr.innerHTML = `<td>${fmt(N)}</td><td>${r.mean.toFixed(4)}</td><td>${r.sd.toFixed(4)}</td><td>${(SIG1 / Math.sqrt(N)).toFixed(4)}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+function drawExp() {
+  const W = ec.width, H = ec.height, L = 40, R = 30, T = 24, B = 66, w = W - L - R, h = H - T - B;
+  const X0 = 1.5, X1 = 4.5, lx = v => L + (v - X0) / (X1 - X0) * w;
+  ectx.clearRect(0, 0, W, H); ectx.font = FONT; ectx.lineWidth = 1;
+  ectx.strokeStyle = C('--grid'); ectx.fillStyle = C('--muted');
+  ectx.textAlign = 'center'; ectx.textBaseline = 'top';
+  for (let v = 1.5; v <= 4.5 + 1e-9; v += 0.5) {
+    const X = lx(v); ectx.beginPath(); ectx.moveTo(X, T); ectx.lineTo(X, T + h); ectx.stroke();
+    ectx.fillText(v.toFixed(1), X, T + h + 10);
+  }
+  ectx.fillText('estimate of π from one experiment', L + w / 2, T + h + 36);
+  ectx.strokeStyle = C('--faint'); ectx.beginPath(); ectx.moveTo(L, T + h); ectx.lineTo(L + w, T + h); ectx.stroke();
+  if (!lastExp) return;
+  const { N, est } = lastExp, M = est.length;
+  const q = 4 / N, m = Math.max(1, Math.ceil(0.025 / q - 1e-9)), BW = m * q;
+  const counts = new Map();
+  for (const e of est) { const b = Math.floor((e + q / 2) / BW + 1e-9); counts.set(b, (counts.get(b) || 0) + 1); }
+  let ymax = 0; for (const c of counts.values()) ymax = Math.max(ymax, c / M);
+  const sig = SIG1 / Math.sqrt(N), showCurve = N >= 100;
+  if (showCurve) ymax = Math.max(ymax, BW / (sig * Math.sqrt(2 * PI)));
+  ymax *= 1.12;
+  const ly = f => T + h - (f / ymax) * h;
+  ectx.save(); ectx.beginPath(); ectx.rect(L, T, w, h + 1); ectx.clip();
+  ectx.fillStyle = C('--accent');
+  for (const [b, c] of counts) {
+    const a = b * BW - q / 2, xa = lx(a), xb = lx(a + BW), gap = (xb - xa) > 6 ? 2 : 0.5;
+    ectx.fillRect(xa + gap / 2, ly(c / M), Math.max(1, xb - xa - gap), T + h - ly(c / M));
+  }
+  if (showCurve) {
+    ectx.beginPath();
+    for (let i = 0; i <= 600; i++) {
+      const v = X0 + i / 600 * (X1 - X0), f = BW * Math.exp(-((v - PI) ** 2) / (2 * sig * sig)) / (sig * Math.sqrt(2 * PI));
+      const X = lx(v), Y = ly(f); i ? ectx.lineTo(X, Y) : ectx.moveTo(X, Y);
+    }
+    ectx.strokeStyle = C('--target'); ectx.lineWidth = 3; ectx.stroke();
+  }
+  ectx.setLineDash([8, 6]); ectx.strokeStyle = C('--ink'); ectx.lineWidth = 1.5;
+  ectx.beginPath(); ectx.moveTo(lx(PI), T); ectx.lineTo(lx(PI), T + h); ectx.stroke(); ectx.setLineDash([]);
+  ectx.restore();
+  ectx.fillStyle = C('--ink'); ectx.textAlign = 'left'; ectx.textBaseline = 'top'; ectx.font = 'bold 22px Georgia, serif';
+  ectx.fillText('π', lx(PI) + 8, T + 2);
+  ectx.font = FONT; ectx.fillStyle = C('--muted'); ectx.textAlign = 'right';
+  ectx.fillText(`N = ${fmt(N)}: spread ${lastExp.sd.toFixed(4)}`, L + w - 6, T + 2);
+}
+
+$('expN').addEventListener('input', () => { $('expNOut').textContent = fmt(NS[+$('expN').value]); });
+$('expBtn').addEventListener('click', runExp);
+
+/* ============ 5. Higher dimensions ============ */
+const VOL = [1, 2]; for (let k = 2; k <= 20; k++) VOL[k] = VOL[k - 2] * 2 * PI / k;
+const frac = d => VOL[d] / 2 ** d;
+const pct = f => f >= 0.001 ? (100 * f).toPrecision(4).replace(/\.?0+$/, '') + '%' : 'about 1 in ' + fmt(1 / f);
+const hc = $('hdCanvas'), hctx = hc.getContext('2d');
+
+function runHD() {
+  const d = +$('dimS').value, T = 100000; let c = 0;
+  for (let t = 0; t < T; t++) {
+    let s = 0;
+    for (let k = 0; k < d; k++) { const u = Math.random(); s += u * u; if (s > 1) break; }
+    if (s <= 1) c++;
+  }
+  $('dimOut').textContent = d;
+  $('hdExact').textContent = pct(frac(d)) + (d === 2 ? ' (= π/4)' : '');
+  $('hdMeas').textContent = `${fmt(c)} landed inside` + (c ? ` (${pct(c / T)})` : '');
+  drawHD(d);
+}
+
+function drawHD(d) {
+  const W = hc.width, H = hc.height, L = 92, R = 16, T = 20, B = 66, w = W - L - R, h = H - T - B;
+  const lo = -8, ly = v => T + (0 - v) / (0 - lo) * h;
+  hctx.clearRect(0, 0, W, H); hctx.font = FONT; hctx.lineWidth = 1;
+  hctx.strokeStyle = C('--grid'); hctx.fillStyle = C('--muted'); hctx.textAlign = 'right'; hctx.textBaseline = 'middle';
+  const yl = { 0: '100%', '-2': '1%', '-4': '0.01%', '-6': '1 in 10⁶', '-8': '1 in 10⁸' };
+  for (let e = 0; e >= lo; e -= 2) { const Y = ly(e); hctx.beginPath(); hctx.moveTo(L, Y); hctx.lineTo(L + w, Y); hctx.stroke(); hctx.fillText(yl[e], L - 10, Y); }
+  const bw = w / 20;
+  hctx.textAlign = 'center'; hctx.textBaseline = 'top'; hctx.font = '16px system-ui, sans-serif';
+  for (let k = 1; k <= 20; k++) {
+    const v = Math.log10(frac(k)), X = L + (k - 1) * bw, Y = ly(v);
+    hctx.fillStyle = k === d ? C('--accent') : C('--line');
+    hctx.fillRect(X + 3, Y, bw - 6, T + h - Y);
+    hctx.fillStyle = k === d ? C('--ink') : C('--muted');
+    hctx.fillText(String(k), X + bw / 2, T + h + 10);
+  }
+  hctx.font = FONT; hctx.fillStyle = C('--muted');
+  hctx.fillText('dimensions, d', L + w / 2, T + h + 38);
+}
+
+$('dimS').addEventListener('input', runHD);
+$('hdBtn').addEventListener('click', runHD);
+
+/* ============ 6. Reverse Monte Carlo ============ */
+const NP = 600, BINS = 30, RMAX = Math.SQRT2;
+const SHAPES = {
+  disk: (x, y) => x * x + y * y <= 1,
+  ring: (x, y) => { const r = Math.hypot(x, y); return r >= 0.55 && r <= 0.85; },
+  outside: (x, y) => x * x + y * y > 1,
+  wedge: (x, y) => x * x + y * y <= 1 && Math.atan2(y, x) <= PI / 9
+};
+const binOf = (x, y) => { const b = Math.floor(Math.hypot(x, y) / RMAX * BINS); return b >= BINS ? BINS - 1 : b; };
+const P = new Float64Array(2 * NP), pb = new Int32Array(NP), Hc = new Float64Array(BINS);
+let Tg = new Float64Array(BINS), chi = 0, tried = 0, acc = 0, chiHist = [], rmcOn = false, shapeKey = 'disk';
+const rc = $('rmcCanvas'), rctx = rc.getContext('2d');
+const rh = $('rmcHist'), rhctx = rh.getContext('2d');
+const rx = $('rmcChi'), rxctx = rx.getContext('2d');
+const shapeLayer = document.createElement('canvas'); shapeLayer.width = 800; shapeLayer.height = 800;
+const sig = () => +$('sigS').value;
+
+function computeTarget() {
+  const test = SHAPES[shapeKey], t = new Float64Array(BINS); let kept = 0;
+  while (kept < 200000) { const x = Math.random(), y = Math.random(); if (test(x, y)) { t[binOf(x, y)]++; kept++; } }
+  for (let b = 0; b < BINS; b++) t[b] *= NP / kept;
+  Tg = t;
+}
+
+function buildShapeLayer() {
+  const g = shapeLayer.getContext('2d'), test = SHAPES[shapeKey], n = 362, cs = SZ / n;
+  g.clearRect(0, 0, 800, 800); g.fillStyle = C('--target');
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+    if (test((i + 0.5) / n, (j + 0.5) / n)) g.fillRect(PL + i * cs, PT + (n - 1 - j) * cs, cs + 0.6, cs + 0.6);
+  }
+}
+
+function calcChi() { const s2 = sig() ** 2; let c = 0; for (let b = 0; b < BINS; b++) { const d = Hc[b] - Tg[b]; c += d * d; } return c / s2; }
+
+function rmcReset() {
+  for (let i = 0; i < NP; i++) { const x = Math.random(), y = Math.random(); P[2 * i] = x; P[2 * i + 1] = y; pb[i] = binOf(x, y); }
+  Hc.fill(0); for (let i = 0; i < NP; i++) Hc[pb[i]]++;
+  chi = calcChi(); tried = 0; acc = 0; chiHist = [0, chi];
+  drawRmcAll();
+}
+
+function rmcSteps(n) {
+  const s2 = sig() ** 2, st = 0.08;
+  for (let k = 0; k < n; k++) {
+    const i = (Math.random() * NP) | 0;
+    const x = P[2 * i] + (Math.random() * 2 - 1) * st, y = P[2 * i + 1] + (Math.random() * 2 - 1) * st;
+    tried++;
+    if (x < 0 || x > 1 || y < 0 || y > 1) continue;
+    const ob = pb[i], nb = binOf(x, y);
+    if (ob === nb) { P[2 * i] = x; P[2 * i + 1] = y; acc++; continue; }
+    const dO = Hc[ob] - Tg[ob], dN = Hc[nb] - Tg[nb];
+    const delta = (2 * (dN - dO) + 2) / s2;
+    if (delta <= 0 || Math.random() < Math.exp(-delta / 2)) {
+      P[2 * i] = x; P[2 * i + 1] = y; pb[i] = nb; Hc[ob]--; Hc[nb]++; acc++;
+    }
+  }
+  chi = calcChi();
+  chiHist.push(tried, chi);
+  if (chiHist.length > 2400) { const a = []; for (let j = 0; j < chiHist.length; j += 4) a.push(chiHist[j], chiHist[j + 1]); chiHist = a; }
+}
+
+function drawRmc() {
+  rctx.clearRect(0, 0, 800, 800);
+  if ($('showShape').checked) { rctx.globalAlpha = 0.32; rctx.drawImage(shapeLayer, 0, 0); rctx.globalAlpha = 1; }
+  rctx.save();
+  rctx.setLineDash([7, 8]); rctx.strokeStyle = C('--faint'); rctx.lineWidth = 1.6;
+  rctx.beginPath(); rctx.arc(px(0), py(0), SZ, -PI / 2, 0); rctx.stroke();
+  rctx.restore();
+  squareFrame(rctx, false);
+  const p = new Path2D();
+  for (let i = 0; i < NP; i++) { const X = px(P[2 * i]), Y = py(P[2 * i + 1]); p.moveTo(X + 4.5, Y); p.arc(X, Y, 4.5, 0, 2 * PI); }
+  rctx.fillStyle = C('--accent'); rctx.fill(p);
+}
+
+function drawRmcHist() {
+  const W = rh.width, H = rh.height, L = 60, R = 20, T = 20, B = 70, w = W - L - R, h = H - T - B;
+  const lx = r => L + r / RMAX * w;
+  rhctx.clearRect(0, 0, W, H); rhctx.font = FONT; rhctx.lineWidth = 1;
+  let ymax = 1; for (let b = 0; b < BINS; b++) ymax = Math.max(ymax, Tg[b], Hc[b]); ymax *= 1.15;
+  const ly = v => T + h - v / ymax * h;
+  rhctx.strokeStyle = C('--grid'); rhctx.fillStyle = C('--muted'); rhctx.textAlign = 'center'; rhctx.textBaseline = 'top';
+  for (let r = 0; r <= 1.25 + 1e-9; r += 0.25) { const X = lx(r); rhctx.beginPath(); rhctx.moveTo(X, T); rhctx.lineTo(X, T + h); rhctx.stroke(); rhctx.fillText(r.toFixed(2), X, T + h + 10); }
+  rhctx.fillText('distance from the corner, r', L + w / 2, T + h + 38);
+  const step = Math.pow(10, Math.floor(Math.log10(ymax / 3))) * (ymax / 3 >= 2 * Math.pow(10, Math.floor(Math.log10(ymax / 3))) ? 2 : 1);
+  rhctx.textAlign = 'right'; rhctx.textBaseline = 'middle';
+  for (let v = 0; v <= ymax; v += step) { const Y = ly(v); rhctx.beginPath(); rhctx.moveTo(L, Y); rhctx.lineTo(L + w, Y); rhctx.stroke(); rhctx.fillText(String(Math.round(v)), L - 10, Y); }
+  const bw = w / BINS;
+  rhctx.globalAlpha = 0.45; rhctx.fillStyle = C('--target');
+  for (let b = 0; b < BINS; b++) { if (Tg[b] > 0) rhctx.fillRect(L + b * bw + 1.5, ly(Tg[b]), bw - 3, T + h - ly(Tg[b])); }
+  rhctx.globalAlpha = 1;
+  rhctx.setLineDash([6, 6]); rhctx.strokeStyle = C('--faint'); rhctx.lineWidth = 1.5;
+  rhctx.beginPath(); rhctx.moveTo(lx(1), T); rhctx.lineTo(lx(1), T + h); rhctx.stroke(); rhctx.setLineDash([]);
+  rhctx.beginPath();
+  for (let b = 0; b < BINS; b++) { const X = L + (b + 0.5) * bw, Y = ly(Hc[b]); b ? rhctx.lineTo(X, Y) : rhctx.moveTo(X, Y); }
+  rhctx.strokeStyle = C('--accent'); rhctx.lineWidth = 2.5; rhctx.lineJoin = 'round'; rhctx.stroke();
+  rhctx.fillStyle = C('--accent');
+  for (let b = 0; b < BINS; b++) { rhctx.beginPath(); rhctx.arc(L + (b + 0.5) * bw, ly(Hc[b]), 4.5, 0, 2 * PI); rhctx.fill(); }
+}
+
+function drawChi() {
+  const W = rx.width, H = rx.height, L = 70, R = 20, T = 20, B = 70, w = W - L - R, h = H - T - B;
+  rxctx.clearRect(0, 0, W, H); rxctx.font = FONT; rxctx.lineWidth = 1;
+  const raw = Math.max(1000, tried), mag = 10 ** Math.floor(Math.log10(raw)), xmax = [1, 2, 5, 10].map(k => k * mag).find(v => v >= raw);
+  let mn = Infinity, mx = -Infinity;
+  for (let i = 1; i < chiHist.length; i += 2) { const v = Math.log10(Math.max(chiHist[i], 1e-3)); mn = Math.min(mn, v); mx = Math.max(mx, v); }
+  const ref = Math.log10(BINS);
+  let lo = Math.floor(Math.min(mn, ref) - 0.15), hi = Math.ceil(Math.max(mx, ref) + 0.15); if (hi <= lo) hi = lo + 1;
+  const lx = t => L + t / xmax * w, ly = v => T + (hi - v) / (hi - lo) * h;
+  rxctx.strokeStyle = C('--grid'); rxctx.fillStyle = C('--muted'); rxctx.textAlign = 'right'; rxctx.textBaseline = 'middle';
+  for (let e = lo; e <= hi; e++) { const Y = ly(e); rxctx.beginPath(); rxctx.moveTo(L, Y); rxctx.lineTo(L + w, Y); rxctx.stroke(); rxctx.fillText(short(10 ** e), L - 10, Y); }
+  rxctx.textAlign = 'center'; rxctx.textBaseline = 'top';
+  for (let i = 0; i <= 4; i++) { const t = xmax * i / 4, X = lx(t); rxctx.textAlign = i === 4 ? 'right' : 'center'; rxctx.fillText(short(t), i === 4 ? X + 6 : X, T + h + 10); }
+  rxctx.textAlign = 'center';
+  rxctx.fillText('moves tried', L + w / 2, T + h + 38);
+  rxctx.setLineDash([6, 6]); rxctx.strokeStyle = C('--target'); rxctx.lineWidth = 2;
+  rxctx.beginPath(); rxctx.moveTo(L, ly(ref)); rxctx.lineTo(L + w, ly(ref)); rxctx.stroke(); rxctx.setLineDash([]);
+  rxctx.fillStyle = C('--target'); rxctx.textAlign = 'right'; rxctx.textBaseline = 'top';
+  rxctx.fillText('every bin off by 1σ', L + w - 6, ly(ref) + 8);
+  rxctx.beginPath();
+  for (let i = 0; i < chiHist.length; i += 2) { const X = lx(chiHist[i]), Y = ly(Math.log10(Math.max(chiHist[i + 1], 1e-3))); i ? rxctx.lineTo(X, Y) : rxctx.moveTo(X, Y); }
+  rxctx.strokeStyle = C('--accent'); rxctx.lineWidth = 2.5; rxctx.lineJoin = 'round'; rxctx.stroke();
+}
+
+function rmcStats() {
+  $('rTried').textContent = fmt(tried);
+  $('rAcc').textContent = tried ? `${(100 * acc / tried).toFixed(1)}%` : '—';
+  $('rChi').textContent = chi >= 100 ? fmt(chi) : chi.toFixed(1);
+  let n = 0; for (let i = 0; i < NP; i++) if (P[2 * i] ** 2 + P[2 * i + 1] ** 2 <= 1) n++;
+  $('rIn').textContent = `${n} of ${NP}`;
+  const st = $('rStatus');
+  if (!tried) { st.textContent = 'Press Run to start fitting.'; st.className = 'status'; }
+  else {
+    const rms = Math.sqrt(chi / BINS);
+    if (rms < 2) { st.textContent = `Close fit: each histogram bin is now off by about ${rms.toFixed(1)}σ on average.`; st.className = 'status good'; }
+    else { st.textContent = `Still fitting: bins are off by about ${rms.toFixed(1)}σ on average.`; st.className = 'status'; }
+  }
+}
+
+function drawRmcAll() { drawRmc(); drawRmcHist(); drawChi(); rmcStats(); }
+
+const rmcPer = () => Math.round(10 ** (1 + +$('rmcSpeed').value / 100 * 3.3));
+function updRmcSpeed() { $('rmcSpeedOut').textContent = fmt(rmcPer()) + ' moves / frame'; }
+function rmcLoop() { if (!rmcOn) return; rmcSteps(rmcPer()); drawRmcAll(); requestAnimationFrame(rmcLoop); }
+function setRmc(on) { rmcOn = on; const b = $('rmcRun'); b.textContent = on ? 'Pause' : 'Run'; b.classList.toggle('on', on); if (on) requestAnimationFrame(rmcLoop); }
+
+$('rmcRun').addEventListener('click', () => setRmc(!rmcOn));
+$('rmcStep').addEventListener('click', () => { rmcSteps(1000); drawRmcAll(); });
+$('rmcReset').addEventListener('click', () => { setRmc(false); rmcReset(); });
+$('shapeSel').addEventListener('change', e => { setRmc(false); shapeKey = e.target.value; computeTarget(); buildShapeLayer(); rmcReset(); });
+$('showShape').addEventListener('change', drawRmc);
+$('sigS').addEventListener('input', () => { $('sigOut').textContent = sig().toFixed(2); chi = calcChi(); if (chiHist.length) chiHist[chiHist.length - 1] = chi; drawChi(); rmcStats(); });
+$('rmcSpeed').addEventListener('input', updRmcSpeed);
+
+/* ============ init ============ */
+dartFrame(); dartStats(); drawConv(); updSpeed();
+$('expNOut').textContent = fmt(NS[+$('expN').value]); runExp();
+runHD();
+$('sigOut').textContent = sig().toFixed(2); updRmcSpeed();
+computeTarget(); buildShapeLayer(); rmcReset();
+
+const mq = window.matchMedia ? matchMedia('(prefers-color-scheme: dark)') : null;
+if (mq && mq.addEventListener) mq.addEventListener('change', () => {
+  dartFrame(); drawConv(); drawExp(); drawHD(+$('dimS').value); buildShapeLayer(); drawRmcAll();
+});
+})();
+</script>
+</body>
+</html>
